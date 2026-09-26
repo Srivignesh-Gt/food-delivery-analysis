@@ -1,0 +1,176 @@
+use food_delivery_db;
+
+CREATE DATABASE IF NOT EXIST food_delivery_db;
+USE food_delivery_db;
+CREATE TABLE food_delivery_orders (
+    order_id VARCHAR(50) PRIMARY KEY,
+    customer_id VARCHAR(50),
+    customer_age DECIMAL(5,2),
+    customer_gender VARCHAR(30),
+    city VARCHAR(100),
+    area VARCHAR(100),
+    restaurant_id VARCHAR(50),
+    restaurant_name VARCHAR(150),
+    cuisine_type VARCHAR(100),
+    order_date DATE,
+    order_time TIME,
+    delivery_time_min DECIMAL(10,2),
+    distance_km DECIMAL(10,2),
+    order_value DECIMAL(12,2),
+    discount_applied DECIMAL(12,2),
+    final_amount DECIMAL(12,2),
+    payment_mode VARCHAR(50),
+    order_status VARCHAR(50),
+    cancellation_reason VARCHAR(100),
+    delivery_partner_id VARCHAR(50),
+    delivery_rating DECIMAL(3,2),
+    restaurant_rating DECIMAL(3,2),
+    order_day VARCHAR(30),
+    peak_hour VARCHAR(30),
+    profit_margin DECIMAL(8,4),
+    order_month VARCHAR(20),
+    order_year INT,
+    customer_age_group VARCHAR(30),
+    delivery_performance VARCHAR(50),
+    revenue DECIMAL(12,2),
+    profit DECIMAL(12,2),
+    cancellation_flag INT,
+    delivered_flag INT
+);
+SELECT
+    COUNT(*) AS total_orders,
+    SUM(delivered_flag) AS delivered_orders,
+    SUM(revenue) AS total_revenue,
+    SUM(profit) AS total_profit,
+    AVG(
+        CASE
+            WHEN delivered_flag = 1
+            THEN final_amount
+        END
+    ) AS avg_order_value,
+    AVG(
+        CASE
+            WHEN delivered_flag = 1
+            THEN delivery_time_min
+        END
+    ) AS avg_delivery_time,
+    100 * SUM(cancellation_flag) / COUNT(*) AS cancellation_rate,
+    100 * SUM(profit) / NULLIF(SUM(revenue),0)
+        AS profit_margin
+FROM food_delivery_orders;
+SELECT
+    order_month,
+    COUNT(*) AS orders,
+    SUM(revenue) AS revenue,
+    SUM(profit) AS profit
+FROM food_delivery_orders
+GROUP BY order_month
+ORDER BY order_month;
+SELECT
+    city,
+    COUNT(*) AS orders,
+    SUM(revenue) AS revenue,
+    SUM(profit) AS profit,
+    AVG(delivery_time_min) AS avg_delivery_time
+FROM food_delivery_orders
+GROUP BY city
+ORDER BY revenue DESC;
+SELECT
+    cuisine_type,
+    COUNT(*) AS orders,
+    SUM(revenue) AS revenue,
+    SUM(profit) AS profit,
+    AVG(restaurant_rating) AS avg_rating
+FROM food_delivery_orders
+GROUP BY cuisine_type
+ORDER BY revenue DESC;
+SELECT
+    customer_id,
+    COUNT(*) AS orders,
+    SUM(revenue) AS total_spend
+FROM food_delivery_orders
+GROUP BY customer_id
+ORDER BY total_spend DESC
+LIMIT 10;
+WITH customer_orders AS (
+    SELECT
+        customer_id,
+        COUNT(*) AS order_count
+    FROM food_delivery_orders
+    GROUP BY customer_id
+)
+
+SELECT
+    CASE
+        WHEN order_count = 1
+        THEN 'One-time'
+        ELSE 'Returning'
+    END AS customer_type,
+    COUNT(*) AS customers
+FROM customer_orders
+GROUP BY customer_type;
+SELECT
+    order_day,
+    COUNT(*) AS orders,
+    SUM(revenue) AS revenue
+FROM food_delivery_orders
+GROUP BY order_day;
+SELECT
+    peak_hour,
+    COUNT(*) AS orders,
+    SUM(revenue) AS revenue,
+    AVG(delivery_time_min) AS avg_delivery_time
+FROM food_delivery_orders
+GROUP BY peak_hour;
+SELECT
+    city,
+    AVG(delivery_time_min) AS avg_delivery_time,
+    AVG(distance_km) AS avg_distance,
+    AVG(delivery_rating) AS avg_delivery_rating
+FROM food_delivery_orders
+WHERE delivered_flag = 1
+GROUP BY city
+ORDER BY avg_delivery_time DESC;
+SELECT
+    distance_km,
+    delivery_time_min,
+    city
+FROM food_delivery_orders
+WHERE delivered_flag = 1
+ORDER BY distance_km;
+SELECT
+    cancellation_reason,
+    COUNT(*) AS cancellations
+FROM food_delivery_orders
+WHERE cancellation_flag = 1
+GROUP BY cancellation_reason
+ORDER BY cancellations DESC;
+SELECT
+    city,
+    COUNT(*) AS total_orders,
+    SUM(cancellation_flag) AS cancelled_orders,
+    ROUND(
+        100 * SUM(cancellation_flag) / COUNT(*),
+        2
+    ) AS cancellation_rate
+FROM food_delivery_orders
+GROUP BY city
+ORDER BY cancellation_rate DESC;
+SELECT
+    payment_mode,
+    COUNT(*) AS orders,
+    SUM(revenue) AS revenue,
+    AVG(final_amount) AS avg_order_value
+FROM food_delivery_orders
+GROUP BY payment_mode
+ORDER BY orders DESC;
+SELECT
+    city,
+    SUM(revenue) AS revenue,
+    SUM(profit) AS profit,
+    100 * SUM(profit) /
+        NULLIF(SUM(revenue),0)
+        AS profit_margin
+FROM food_delivery_orders
+GROUP BY city
+ORDER BY profit DESC;
